@@ -1,6 +1,5 @@
 from openai import OpenAI
 import streamlit as st
-import os
 
 st.set_page_config(page_title="Ecoora AI", page_icon="🌱")
 
@@ -18,7 +17,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "system", "content": "You are Ecoora AI. Help people protect the environment."}
     ]
-
 
 # ---------- MENU ----------
 
@@ -46,38 +44,34 @@ if menu == "Chat":
 
     if question:
 
-        api_key = os.environ.get("OPENAI_API_KEY")
+        try:
+            api_key = st.secrets["OPENAI_API_KEY"]
+        except:
+            st.error("OpenAI API key not found. Add it in Streamlit Secrets.")
+            st.stop()
 
-        if not api_key:
+        client = OpenAI(api_key=api_key)
 
-            st.error("API key not found. Run this in terminal first:")
-            st.code('export OPENAI_API_KEY="your_key_here"')
+        # guardar mensaje usuario
+        st.session_state.messages.append({
+            "role": "user",
+            "content": question
+        })
 
-        else:
+        response = client.responses.create(
+            model="gpt-4o-mini",
+            input=st.session_state.messages
+        )
 
-            client = OpenAI(api_key=api_key)
+        answer = response.output_text
 
-            # guardar mensaje usuario
-            st.session_state.messages.append({
-                "role": "user",
-                "content": question
-            })
+        # guardar respuesta IA
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer
+        })
 
-            response = client.responses.create(
-                model="gpt-4o-mini",
-                input=st.session_state.messages
-            )
-
-            answer = response.output_text
-
-            # guardar respuesta IA
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": answer
-            })
-
-            st.write("🌱 Ecoora:", answer)
-
+        st.write("🌱 Ecoora:", answer)
 
 # ---------- MISSIONS ----------
 
@@ -104,7 +98,6 @@ if menu == "Missions":
 
                 st.success("Mission complete! +10 points ⭐")
 
-
 # ---------- POINTS ----------
 
 if menu == "Points":
@@ -112,7 +105,6 @@ if menu == "Points":
     st.header("Your Eco Points ⭐")
 
     st.write(f"Total Points: {st.session_state.points}")
-
 
 # ---------- SETTINGS ----------
 
